@@ -1,73 +1,120 @@
 <template>
-  <div class="q-pa-md" style="max-width: 400px">
-
-    <q-form
-      @submit="onSubmit"
-      @reset="onReset"
-      class="q-gutter-md"
+<q-page padding>
+<q-table
+      title="Data Penjualan"
+      :data="data"
+      :columns="columns"
+      row-key="namaKegiatan"
     >
-      <q-input
-        filled
-        v-model="form.name"
-        label="Nama Lengkap *"
-        hint="Nama Lengkap"
-        lazy-rules
-        :rules="[ val => val && val.length > 0 || 'Nama lengkap tidak boleh kosong']"
-      />
-
-      <q-input
-        filled
-        type="number"
-        v-model="form.age"
-        label="Umur *"
-        lazy-rules
-        :rules="[
-          val => val !== null && val !== '' || 'Umur tidak boleh kosong'
-        ]"
-      />
-
-      <q-toggle v-model="accept" label="I accept the license and terms" />
-
-      <div>
-        <q-btn label="Submit" type="submit" color="primary"/>
-        <q-btn label="Reset" type="reset" color="primary" flat class="q-ml-sm" />
-      </div>
-      <div>
-      {{ datas.name }}<br>
-      {{ datas.age }}
-      </div>
-    </q-form>
-
-  </div>
+      <template v-slot:top-right>
+        <q-btn
+          icon="add_box"
+          label="Input Kegiatan"
+          unelevated
+          color="primary"
+          :to="{ name: 'inputKegiatan' }"
+        />
+      </template>
+      <template v-slot:body="props">
+        <q-tr :props="props">
+          <q-td key="namaKegiatan" :props="props">
+            {{ props.row.namaKegiatan }}
+          </q-td>
+          <q-td key="deskripsi" :props="props">
+            {{ props.row.deskripsi }}
+          </q-td>
+          <q-td key="waktu" :props="props">
+            {{ props.row.waktu }}
+          </q-td>
+          <q-td key="aksi" :props="props">
+            <q-btn
+              label="edit"
+              color="warning"
+              icon="edit"
+              :to="{ name: 'editKegiatan', params: { id: props.row._id}}"
+              unelevated
+            />
+            <q-btn
+              label="hapus"
+              icon="delete"
+              @click="confirm(props.row._id)"
+              color="negative"
+              class="q-ml-md"
+              unelevated
+            />
+          </q-td>
+        </q-tr>
+      </template>
+    </q-table>
+  </q-page>
 </template>
-
 <script>
+
 export default {
   data () {
     return {
-      form: {
-        name: null,
-        age: null
-      },
-      datas: {
-        name: null,
-        age: null
-      },
-
-      accept: false
+      columns: [
+        {
+          name: 'namaKegiatan',
+          align: 'left',
+          label: 'Nama Kegiatan',
+          field: 'namaKegiatan'
+        },
+        {
+          name: 'deskripsi',
+          align: 'left',
+          label: 'Deskripsi',
+          field: 'deskripsi'
+        },
+        {
+          name: 'waktu',
+          align: 'left',
+          label: 'Waktu',
+          field: 'waktu'
+        },
+        {
+          name: 'aksi',
+          align: 'left',
+          label: 'Aksi',
+          field: 'aksi'
+        }
+      ],
+      data: []
     }
   },
-
+  created () {
+    this.getData()
+  },
   methods: {
-    onSubmit () {
-      this.datas = this.form
-      console.log(this.datas)
+    getData () {
+      this.$axios.get('kegiatan/getall')
+        .then(res => {
+          this.data = res.data.result
+        })
     },
-
-    onReset () {
-      this.form.name = null
-      this.form.age = null
-      this.accept = false
+    confirm (id) {
+      this.$q.dialog({
+        title: 'Konfirmasi',
+        message: 'Apakah Anda Yakin?',
+        cancel: true,
+        persistent: true
+      }).onOk(() => {
+        this.$axios.delete(`kegiatan/delete/${id}`)
+          .then(res => {
+            if (res.data.status) {
+              this.$q.notify({
+                message: res.data.pesan,
+                color: 'positive'
+              })
+              this.getData()
+            } else {
+              this.$q.notify({
+                message: res.data.pesan,
+                color: 'negative'
+              })
+            }
+          })
+      })
     }
   }
 }
